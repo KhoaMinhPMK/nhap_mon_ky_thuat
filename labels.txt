@@ -1,0 +1,4 @@
+0 Premium watermelon
+1 Second-grade watermelon
+2 Defective watermelon
+3 Nothing
