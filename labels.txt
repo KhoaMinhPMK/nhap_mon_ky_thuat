@@ -1,4 +1,4 @@
-0 Premium watermelon
+0 Premium-grade watermelon
 1 Second-grade watermelon
 2 Defective watermelon
 3 Nothing

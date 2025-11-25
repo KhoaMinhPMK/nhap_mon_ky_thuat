@@ -61,6 +61,11 @@ def create_app():
     bins.set_email_controller(email_controller)
     print("📧 Email notifications ready")
     
+    # Cloud sync controller (for mobile app)
+    from controllers.cloud_sync_controller import cloud_sync
+    bins.set_cloud_sync(cloud_sync)  # Connect cloud sync to bins
+    print("☁ Cloud sync ready")
+    
     # History controller
     from controllers.history_controller import HistoryController
     history = HistoryController()
@@ -82,9 +87,14 @@ def create_app():
     # Register WebSocket events
     register_socket_events(socketio, executor, bins)
     
+    # Start cloud heartbeat (sync status every 30s)
+    from controllers.cloud_sync_controller import cloud_sync
+    cloud_sync.start_heartbeat(interval=30, serial_controller=arduino, executor=executor)
+    
     print("=" * 50)
     print(f"✓ Server ready at http://{SERVER_HOST}:{SERVER_PORT}")
     print("✓ WebSocket enabled for realtime updates")
+    print("✓ Cloud sync active (heartbeat every 30s)")
     print("=" * 50)
     
     return app, socketio
