@@ -1,0 +1,477 @@
+// ================= LOGGING =================
+function log(msg) {
+    const logBox = document.getElementById('log');
+    const time = new Date().toLocaleTimeString();
+    logBox.innerHTML += `<div>[${time}] ${msg}</div>`;
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+// ================= MANUAL CONTROL =================
+async function sendCommand(cmd) {
+    log(`Cmd: ${cmd}`);
+    try {
+        const res = await fetch('/api/control', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                command: cmd
+            })
+        });
+        const data = await res.json();
+        if (data.status !== "Sent") log(`Err: ${data.status}`);
+    } catch (e) {
+        log(`Error: ${e}`);
+    }
+}
+
+// ================= BLOCKLY DEFINITIONS =================
+
+// 0. When Run Block
+Blockly.Blocks['when_run'] = {
+    init: function () {
+        this.appendDummyInput().appendField("When Run Clicked");
+        this.setNextStatement(true, null);
+        this.setColour(60);
+        this.setTooltip("Start of the program");
+        this.setDeletable(false);
+    }
+};
+
+// 1. Move Block
+Blockly.Blocks['move_motor'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Move")
+            .appendField(new Blockly.FieldDropdown([["X", "X"], ["Y", "Y"], ["Z", "Z"]]), "AXIS")
+            .appendField(new Blockly.FieldDropdown([["+", "1"], ["-", "-1"]]), "DIR")
+            .appendField("Time(ms)")
+            .appendField(new Blockly.FieldNumber(1000, 0), "DURATION")
+            .appendField("Speed")
+            .appendField(new Blockly.FieldNumber(50, 0), "SPEED");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(230);
+        this.setTooltip("Move a motor");
+    }
+};
+
+// 2. Relay Block
+Blockly.Blocks['relay_control'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Relay")
+            .appendField(new Blockly.FieldDropdown([["ON", "1"], ["OFF", "0"]]), "STATE");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(60);
+        this.setTooltip("Control Relay");
+    }
+};
+
+// 2b. Relay Pulse Block
+Blockly.Blocks['relay_pulse'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Relay")
+            .appendField(new Blockly.FieldDropdown([["ON", "1"], ["OFF", "0"]]), "STATE")
+            .appendField("for")
+            .appendField(new Blockly.FieldNumber(1, 0), "SECONDS")
+            .appendField("seconds");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(60);
+        this.setTooltip("Turn relay ON/OFF for a duration, then revert");
+    }
+};
+
+// 3. Wait Block
+Blockly.Blocks['wait_seconds'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Wait")
+            .appendField(new Blockly.FieldNumber(1, 0), "SECONDS")
+            .appendField("seconds");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(120);
+        this.setTooltip("Pause execution");
+    }
+};
+
+// 4. Home Z Block
+Blockly.Blocks['home_z'] = {
+    init: function () {
+        this.appendDummyInput().appendField("Home Z Axis");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(290);
+        this.setTooltip("Return Z to Home");
+    }
+};
+
+// 4b. Home X Block
+Blockly.Blocks['home_x'] = {
+    init: function () {
+        this.appendDummyInput().appendField("Home X Axis");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(290);
+        this.setTooltip("Return X to Home using limit switch");
+    }
+};
+
+// 5. Check Label Block (UPDATED WITH DROPDOWN)
+Blockly.Blocks['check_label_is'] = {
+    init: function () {
+        var options = [
+            ["Premium Watermelon", "Premium-grade watermelon"],
+            ["Second-grade Watermelon", "Second-grade watermelon"],
+            ["Defective Watermelon", "Defective watermelon"],
+            ["Nothing", "Nothing"]
+        ];
+        this.appendDummyInput()
+            .appendField("Check if Label is")
+            .appendField(new Blockly.FieldDropdown(options), "LABEL");
+        this.setOutput(true, "Boolean");
+        this.setColour(260);
+        this.setTooltip("Returns true if the camera sees the specified label");
+    }
+};
+
+// ================= GENERATOR REGISTRATION =================
+function registerGenerators(generator) {
+    if (!generator) return;
+
+    // Helper to support both new (forBlock) and old APIs
+    const register = (type, func) => {
+        if (generator.forBlock) {
+            generator.forBlock[type] = func;
+        } else {
+            generator[type] = func;
+        }
+    };
+
+    register('when_run', function (block) {
+        return '';
+    });
+
+    register('move_motor', function (block) {
+        var axis = block.getFieldValue('AXIS');
+        var dir = block.getFieldValue('DIR');
+        var duration = block.getFieldValue('DURATION');
+        var speed = block.getFieldValue('SPEED');
+
+        var x = (axis == 'X') ? dir : 0;
+        var y = (axis == 'Y') ? dir : 0;
+        var z = (axis == 'Z') ? dir : 0;
+
+        return `{"type": "M", "x": ${x}, "y": ${y}, "z": ${z}, "time": ${duration}, "speed": ${speed}},\n`;
+    });
+
+    register('relay_control', function (block) {
+        var state = block.getFieldValue('STATE');
+        return `{"type": "R", "state": ${state}},\n`;
+    });
+
+    register('relay_pulse', function (block) {
+        var state = block.getFieldValue('STATE');
+        var seconds = block.getFieldValue('SECONDS');
+        var opposite = (state == "1") ? "0" : "1";
+
+        return `{"type": "R", "state": ${state}},\n` +
+            `{"type": "W", "time": ${seconds}},\n` +
+            `{"type": "R", "state": ${opposite}},\n`;
+    });
+
+    register('wait_seconds', function (block) {
+        var seconds = block.getFieldValue('SECONDS');
+        return `{"type": "W", "time": ${seconds}},\n`;
+    });
+
+    register('home_z', function (block) {
+        return `{"type": "H"},\n`;
+    });
+
+    register('home_x', function (block) {
+        return `{"type": "HX"},\n`;
+    });
+
+    register('check_label_is', function (block) {
+        var label = block.getFieldValue('LABEL');
+        return [`{"type": "CHECK_LABEL", "label": "${label}"}`, generator.ORDER_NONE];
+    });
+
+    // Custom generators for Blockly standard blocks to produce JSON
+    register('controls_repeat_ext', function (block) {
+        var times = generator.valueToCode(block, 'TIMES', generator.ORDER_NONE) || '1';
+        var branch = generator.statementToCode(block, 'DO');
+
+        // Clean up the branch code
+        branch = branch.trim();
+        if (branch.endsWith(',')) branch = branch.slice(0, -1);
+
+        return `{"type": "REPEAT", "times": ${times}, "do": [${branch}]},\n`;
+    });
+
+    register('controls_if', function (block) {
+        var condition = generator.valueToCode(block, 'IF0', generator.ORDER_NONE);
+        var branch = generator.statementToCode(block, 'DO0');
+
+        // Clean up branch
+        branch = branch.trim();
+        if (branch.endsWith(',')) branch = branch.slice(0, -1);
+
+        var result = `{"type": "IF", "condition": ${condition}, "then": [${branch}]`;
+
+        // Check if ELSE input exists (only if user added it via settings gear)
+        var elseInput = block.getInput('ELSE');
+        if (elseInput) {
+            var elseBranch = generator.statementToCode(block, 'ELSE');
+            if (elseBranch) {
+                elseBranch = elseBranch.trim();
+                if (elseBranch.endsWith(',')) elseBranch = elseBranch.slice(0, -1);
+                result += `, "else": [${elseBranch}]`;
+            }
+        }
+
+        result += `},\n`;
+        return result;
+    });
+
+    // Override math_number to return just the number
+    register('math_number', function (block) {
+        var code = parseFloat(block.getFieldValue('NUM'));
+        return [code, generator.ORDER_ATOMIC];
+    });
+}
+
+// Register on all potential instances
+if (typeof Blockly !== 'undefined' && Blockly.JavaScript) {
+    registerGenerators(Blockly.JavaScript);
+}
+
+if (typeof javascript !== 'undefined' && javascript.javascriptGenerator) {
+    registerGenerators(javascript.javascriptGenerator);
+}
+
+// ================= BLOCKLY INIT =================
+var workspace = Blockly.inject('blocklyDiv', {
+    toolbox: document.getElementById('toolbox'),
+    scrollbars: true,
+    trashcan: true,
+    grid: {
+        spacing: 20,
+        length: 3,
+        colour: '#333',
+        snap: true
+    },
+    zoom: {
+        controls: true,
+        wheel: true,
+        startScale: 1.0,
+        maxScale: 3,
+        minScale: 0.3,
+        scaleSpeed: 1.2
+    },
+    theme: Blockly.Themes.Dark
+});
+
+// Add default start block
+if (workspace.getAllBlocks().length === 0) {
+    var startBlock = workspace.newBlock('when_run');
+    startBlock.initSvg();
+    startBlock.render();
+    startBlock.moveBy(50, 50);
+}
+
+function clearWorkspace() {
+    workspace.clear();
+    var startBlock = workspace.newBlock('when_run');
+    startBlock.initSvg();
+    startBlock.render();
+    startBlock.moveBy(50, 50);
+}
+
+async function runBlocklyCode() {
+    // Use the correct generator for execution
+    var generator = (typeof javascript !== 'undefined' && javascript.javascriptGenerator) ?
+        javascript.javascriptGenerator : Blockly.JavaScript;
+
+    generator.init(workspace);
+    var code = generator.workspaceToCode(workspace);
+
+    // Clean up the code to make it valid JSON
+    code = code.trim();
+    if (code.endsWith(',')) code = code.slice(0, -1);
+    code = `[${code}]`;
+
+    log("Generating Script...");
+    console.log("Generated JSON:", code);
+
+    try {
+        var commands = JSON.parse(code);
+        console.log("Commands:", commands);
+
+        log(`Generated ${commands.length} steps.`);
+
+        if (commands.length === 0) {
+            log("Warning: Empty script.");
+            return;
+        }
+
+        const res = await fetch('/api/execute_script', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                script: commands
+            })
+        });
+        const data = await res.json();
+        log(`Result: ${data.status}`);
+    } catch (e) {
+        log(`Error: ${e}`);
+        console.error(e);
+    }
+}
+
+window.addEventListener('resize', function () {
+    Blockly.svgResize(workspace);
+});
+
+// ================= SENSOR POLLING =================
+setInterval(pollSensors, 2000);
+
+async function pollSensors() {
+    try {
+        const res = await fetch('/api/sensors');
+        const data = await res.json();
+
+        // Update UI (0 = Detected/Green, 1 = Clear/Red)
+        const s1 = document.getElementById('s1-indicator');
+        const s2 = document.getElementById('s2-indicator');
+
+        if (data.s1 === 0) {
+            s1.style.background = '#2e7d32'; // Green
+            s1.innerText = "S1: DETECT";
+        } else {
+            s1.style.background = '#c62828'; // Red
+            s1.innerText = "S1: CLEAR";
+        }
+
+        if (data.s2 === 0) {
+            s2.style.background = '#2e7d32'; // Green
+            s2.innerText = "S2: DETECT";
+        } else {
+            s2.style.background = '#c62828'; // Red
+            s2.innerText = "S2: CLEAR";
+        }
+    } catch (e) {
+        console.error("Sensor Poll Error:", e);
+    }
+}
+
+// ================= SAVE / LOAD =================
+function saveScenario() {
+    const state = Blockly.serialization.workspaces.save(workspace);
+    const json = JSON.stringify(state, null, 2);
+
+    const blob = new Blob([json], {
+        type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "scenario.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    log("Scenario Saved.");
+}
+
+function loadScenario(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        try {
+            const json = JSON.parse(e.target.result);
+            Blockly.serialization.workspaces.load(json, workspace);
+            log("Scenario Loaded.");
+        } catch (err) {
+            log("Error Loading File: " + err);
+        }
+    };
+
+    reader.readAsText(file);
+    input.value = ""; // Reset input
+}
+
+// ================= BIN STATUS MONITORING =================  
+// Kiểm tra trạng thái hố mỗi 1 giây
+setInterval(checkBinStatus, 1000);
+
+async function checkBinStatus() {
+    try {
+        const res = await fetch('/api/bin_status');
+        const data = await res.json();
+
+        if (data.bin1_full && data.bin2_full) {
+            showAlert('⚠️ CẢ 2 HỐ ĐÃ ĐẦY! Vui lòng dọn rác.', true);
+        } else if (data.bin1_full) {
+            showAlert('⚠️ HỐ PREMIUM ĐÃ ĐẦY! Vui lòng dọn rác.', true);
+        } else if (data.bin2_full) {
+            showAlert('⚠️ HỐ SECOND-GRADE ĐÃ ĐẦY! Vui lòng dọn rác.', true);
+        } else {
+            const banner = document.getElementById('alert-banner');
+            if (banner && banner.style.display === 'block') {
+                dismissAlert();
+            }
+        }
+    } catch (e) {
+        console.error('Error checking bin status:', e);
+    }
+}
+
+function showAlert(message, showResetButton = false) {
+    const banner = document.getElementById('alert-banner');
+    const messageEl = document.getElementById('alert-message');
+    messageEl.innerHTML = message;
+
+    if (showResetButton) {
+        const resetBtn = document.createElement('button');
+        resetBtn.textContent = '🗑 Đã dọn rác';
+        resetBtn.style.cssText = 'margin-left: 20px; background: #4caf50; color: white; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer;';
+        resetBtn.onclick = resetBinFlags;
+
+        const oldResetBtn = messageEl.querySelector('button');
+        if (oldResetBtn) oldResetBtn.remove();
+
+        messageEl.appendChild(resetBtn);
+    }
+
+    banner.style.display = 'block';
+    log(message);
+}
+
+async function resetBinFlags() {
+    try {
+        await fetch('/api/reset_bins', { method: 'POST' });
+        log('✓ Đã reset trạng thái hố');
+        dismissAlert();
+        setTimeout(checkBinStatus, 100);
+    } catch (e) {
+        log('Error resetting bins: ' + e);
+    }
+}
+
+function dismissAlert() {
+    document.getElementById('alert-banner').style.display = 'none';
+}

@@ -1,0 +1,41 @@
+<!-- Sidebar Component -->
+<div id="sidebar">
+    <!-- Video Feed -->
+    <div class="panel">
+        <h2>📹 Video Feed</h2>
+        <img class="video-feed" src="/video_feed" alt="Camera Feed">
+    </div>
+
+    <!-- Manual Control -->
+    <div class="panel">
+        <h2>🎮 Manual Control</h2>
+        <div class="control-grid">
+            <button class="btn" onclick="sendCommand('Y+')">Y+</button>
+            <button class="btn" onclick="sendCommand('Z+')">Z+</button>
+            <button class="btn" onclick="sendCommand('Y-')">Y-</button>
+            <button class="btn" onclick="sendCommand('X-')">X-</button>
+            <button class="btn" onclick="sendCommand('HOME')">🏠 Home</button>
+            <button class="btn" onclick="sendCommand('X+')">X+</button>
+            <button class="btn"></button>
+            <button class="btn" onclick="sendCommand('Z-')">Z-</button>
+            <button class="btn"></button>
+        </div>
+        <button class="btn btn-green" onclick="sendCommand('RELAY_ON')">Relay ON</button>
+        <button class="btn btn-red" onclick="sendCommand('RELAY_OFF')">Relay OFF</button>
+    </div>
+
+    <!-- Sensor Indicators -->
+    <div class="panel">
+        <h2>🔍 Sensors</h2>
+        <div id="s1-indicator" class="btn">S1: CLEAR</div>
+        <div id="s2-indicator" class="btn">S2: CLEAR</div>
+    </div>
+    
+    <!-- Settings -->
+    <div class="panel">
+        <h2>⚙️ Cài đặt</h2>
+        <button class="btn btn-settings" onclick="EmailSettings.open()">
+            📧 Email Thông báo
+        </button>
+    </div>
+</div>

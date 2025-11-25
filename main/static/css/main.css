@@ -1,0 +1,21 @@
+/**
+ * Main CSS Entry Point
+ * Imports all CSS modules in correct order
+ * 
+ * Structure:
+ * 1. variables.css  - Design tokens (colors, spacing, fonts)
+ * 2. base.css       - Reset and fundamental styles
+ * 3. layout.css     - Page structure (sidebar, main area)
+ * 4. components.css - Buttons, cards, indicators
+ * 5. notifications.css - Alert banners, toasts
+ * 6. blockly.css    - Blockly workspace overrides
+ * 7. responsive.css - Media queries
+ */
+
+@import url('variables.css');
+@import url('base.css');
+@import url('layout.css');
+@import url('components.css');
+@import url('notifications.css');
+@import url('blockly.css');
+@import url('responsive.css');

@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "smtp_server": "smtp.gmail.com",
+  "smtp_port": 587,
+  "sender_email": "cncsmartarm@gmail.com",
+  "sender_password": "tklk mmkk gqol wfvc",
+  "recipient_emails": [
+    "xinchao10a8@gmail.com"
+  ],
+  "notify_bin1_full": true,
+  "notify_bin2_full": true
+}

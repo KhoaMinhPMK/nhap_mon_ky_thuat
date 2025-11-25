@@ -1,0 +1,17 @@
+<!-- Main Workspace Area -->
+<div id="main-area">
+    <!-- Toolbar -->
+    <div id="toolbar">
+        <button class="btn btn-green" onclick="runBlocklyCode()">▶ Run Script</button>
+        <button class="btn btn-red" onclick="clearWorkspace()">🗑 Clear</button>
+        <button class="btn btn-blue" onclick="saveScenario()">💾 Save</button>
+        <label class="btn btn-blue" for="load-input">📁 Load</label>
+        <input type="file" id="load-input" accept=".json" style="display:none" onchange="loadScenario(this)">
+    </div>
+
+    <!-- Blockly Workspace -->
+    <div id="blocklyDiv"></div>
+
+    <!-- Log Box -->
+    <div id="log" class="log-box"></div>
+</div>

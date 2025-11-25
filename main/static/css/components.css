@@ -1,0 +1,196 @@
+/**
+ * Components - Buttons, cards, indicators
+ */
+
+/* ===== Buttons - Base ===== */
+.btn {
+    background: var(--bg-button);
+    color: var(--text-white);
+    border: 1px solid var(--border-light);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    font-weight: bold;
+    font-size: var(--font-size-base);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    text-decoration: none;
+    user-select: none;
+}
+
+.btn:hover {
+    background: var(--bg-button-hover);
+    border-color: var(--text-muted);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== Button Variants ===== */
+.btn-green {
+    background: var(--color-success);
+    border-color: #1b5e20;
+}
+
+.btn-green:hover {
+    background: var(--color-success-hover);
+}
+
+.btn-red {
+    background: var(--color-danger);
+    border-color: var(--color-danger-dark);
+}
+
+.btn-red:hover {
+    background: var(--color-danger-hover);
+}
+
+.btn-blue {
+    background: var(--color-primary-dark);
+    border-color: #0d47a1;
+}
+
+.btn-blue:hover {
+    background: #1976d2;
+}
+
+.btn-warning {
+    background: var(--color-warning);
+    border-color: var(--color-warning-dark);
+    color: var(--text-black);
+}
+
+.btn-warning:hover {
+    background: #ffa726;
+}
+
+/* ===== Button Sizes ===== */
+.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-size-lg);
+}
+
+/* ===== Button with Icon ===== */
+.btn-icon {
+    padding: var(--spacing-sm);
+    min-width: 36px;
+}
+
+/* ===== Sensor Indicators ===== */
+.indicator {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-weight: bold;
+    text-align: center;
+    transition: all var(--transition-normal);
+}
+
+.indicator.detected,
+#s1-indicator.detected,
+#s2-indicator.detected {
+    background: var(--color-success) !important;
+    color: var(--text-white);
+    box-shadow: 0 0 10px var(--color-success-glow);
+}
+
+.indicator.clear,
+#s1-indicator.clear,
+#s2-indicator.clear {
+    background: var(--color-danger) !important;
+    color: var(--text-white);
+}
+
+/* ===== Cards ===== */
+.card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+}
+
+.card-header {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-dark);
+}
+
+.card-body {
+    /* Card content */
+}
+
+/* ===== Badges ===== */
+.badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-weight: bold;
+    border-radius: var(--radius-xl);
+    text-transform: uppercase;
+}
+
+.badge-success {
+    background: var(--color-success);
+    color: var(--text-white);
+}
+
+.badge-danger {
+    background: var(--color-danger);
+    color: var(--text-white);
+}
+
+.badge-warning {
+    background: var(--color-warning);
+    color: var(--text-black);
+}
+
+/* ===== File Input Label ===== */
+label.btn {
+    cursor: pointer;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+/* ===== Tooltips ===== */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-black);
+    color: var(--text-white);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-fast);
+    z-index: 100;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+}

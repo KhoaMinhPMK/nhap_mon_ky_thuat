@@ -1,0 +1,124 @@
+/**
+ * Layout Styles - Page structure and containers
+ */
+
+/* ===== Main Layout ===== */
+#sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-dark);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-sidebar);
+    z-index: var(--z-sidebar);
+    overflow-y: auto;
+}
+
+#main-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-width: 0; /* Prevent flex item overflow */
+}
+
+/* ===== Panels ===== */
+.panel {
+    margin-bottom: var(--spacing-lg);
+}
+
+.panel:last-child {
+    margin-bottom: 0;
+}
+
+/* ===== Toolbar ===== */
+#toolbar {
+    background: var(--bg-panel);
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-dark);
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ===== Blockly Area ===== */
+#blocklyDiv {
+    flex-grow: 1;
+    width: 100%;
+    min-height: 300px;
+}
+
+/* ===== Log Box ===== */
+.log-box {
+    background: var(--bg-black);
+    color: var(--text-log);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm);
+    height: var(--log-height);
+    overflow-y: auto;
+    border-top: 1px solid var(--border-dark);
+}
+
+.log-box div {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.log-box div:last-child {
+    border-bottom: none;
+}
+
+/* ===== Video Feed Container ===== */
+.video-feed {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-medium);
+    background: var(--bg-black);
+    min-height: var(--video-min-height);
+    object-fit: cover;
+}
+
+/* ===== Control Grid ===== */
+.control-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+/* ===== Flex Utilities ===== */
+.flex {
+    display: flex;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.flex-center {
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-between {
+    justify-content: space-between;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.gap-sm {
+    gap: var(--spacing-sm);
+}
+
+.gap-md {
+    gap: var(--spacing-md);
+}
+
+.gap-lg {
+    gap: var(--spacing-lg);
+}

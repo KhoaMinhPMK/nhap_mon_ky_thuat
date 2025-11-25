@@ -1,0 +1,433 @@
+import cv2
+import numpy as np
+import serial
+import time
+import json
+import os
+import requests
+import threading
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, Response
+
+# Keras / ML imports
+import keras
+from keras.layers import TFSMLayer
+from PIL import Image, ImageOps
+
+# ================= CONFIGURATION =================
+MODEL_PATH = "C:\\Users\\LENOVO\\Desktop\\NMKT\\nhap_mon_ky_thuat\\model.savedmodel"
+LABELS_PATH = "C:\\Users\\LENOVO\\Desktop\\NMKT\\nhap_mon_ky_thuat\\labels.txt"
+SERIAL_PORT = "COM5"
+BAUD_RATE = 9600
+CAMERA_INDEX = 1 
+API_ENDPOINT = "https://bkuteam.site/upload/receive.php"
+
+# ================= GLOBAL STATE =================
+app = Flask(__name__)
+ser = None
+model_layer = None
+class_names = []
+camera = None
+is_running_scenario = False
+stop_scenario_flag = False
+
+# Bin status flags
+bin1_full_flag = False  # Premium bin
+bin2_full_flag = False  # Second-grade bin
+
+# ================= SERIAL CONTROLLER =================
+class SerialController:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.connect()
+
+    def connect(self):
+        global ser
+        try:
+            ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+            print(f"Connected to {SERIAL_PORT}")
+            time.sleep(2) # Wait for Arduino reset
+        except Exception as e:
+            print(f"Serial Error: {e}")
+            ser = None
+
+    def send_command(self, cmd):
+        global ser
+        if not ser:
+            return "Error: No Serial"
+        
+        with self.lock:
+            try:
+                print(f"Sending: {cmd}")
+                ser.write(f"{cmd}\n".encode('utf-8'))
+                # Wait for acknowledgment
+                response = ser.readline().decode('utf-8').strip()
+                print(f"Arduino: {response}")
+                return response
+            except Exception as e:
+                print(f"Write Error: {e}")
+                return f"Error: {e}"
+
+arduino = SerialController()
+
+# ================= ML FUNCTIONS =================
+def load_model():
+    global model_layer, class_names
+    print("Loading model...")
+    try:
+        model_layer = TFSMLayer(MODEL_PATH, call_endpoint='serving_default')
+        class_names = open(LABELS_PATH, "r").readlines()
+        print("Model loaded.")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+
+def preprocess_image(image_pil):
+    data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+    size = (224, 224)
+    image = ImageOps.fit(image_pil, size, Image.Resampling.LANCZOS)
+    image_array = np.asarray(image)
+    normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
+    data[0] = normalized_image_array
+    return data
+
+def predict_frame(frame):
+    if not model_layer:
+        return -1, "Model Not Loaded", 0.0
+    
+    image_cv = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image_pil = Image.fromarray(image_cv)
+    data = preprocess_image(image_pil)
+    
+    prediction_dict = model_layer(data)
+    prediction = list(prediction_dict.values())[0]
+    if hasattr(prediction, 'numpy'):
+        prediction = prediction.numpy()
+        
+    index = np.argmax(prediction)
+    class_name = class_names[index]
+    confidence_score = prediction[0][index]
+    
+    return index, class_name, confidence_score
+
+# ================= SCENARIO LOGIC (REPLACING ARDUINO LOGIC) =================
+def run_scenario_logic(scenario_type):
+    global is_running_scenario, stop_scenario_flag
+    is_running_scenario = True
+    stop_scenario_flag = False
+    
+    print(f"Starting Scenario {scenario_type}")
+    
+    try:
+        # Common params
+        # M <dirX> <dirY> <dirZ> <duration> <speed>
+        # X_POS=1, X_NEG=-1, Y_POS=1, Y_NEG=-1, Z_POS=1, Z_NEG=-1, NO=0
+        
+        # Example sequence based on old dualoai1
+        # 1. Move Y+
+        if stop_scenario_flag: return
+        arduino.send_command("M 0 1 0 430 80")
+        
+        if scenario_type == 1:
+            # Specifics for Type 1
+            pass
+        elif scenario_type == 2:
+            # Specifics for Type 2
+            pass
+            
+        # Example: Home Z
+        if stop_scenario_flag: return
+        arduino.send_command("H")
+        
+        print("Scenario Complete")
+        
+    except Exception as e:
+        print(f"Scenario Error: {e}")
+    finally:
+        is_running_scenario = False
+
+# ================= BIN STATUS CHECKER =================
+def check_bin_status():
+    """
+    Kiểm tra trạng thái đầy của 2 hố bằng cách đọc cảm biến liên tục 3 giây.
+    Phân biệt 'đầy thật' vs 'vật đang rơi qua' bằng tỷ lệ phát hiện.
+    
+    Returns:
+        tuple: (bin1_full, bin2_full) - True nếu hố đầy
+    """
+    global bin1_full_flag, bin2_full_flag
+    
+    s1_samples = []
+    s2_samples = []
+    
+    print("Checking bin status...")
+    
+    # Đọc 30 lần trong 3 giây (mỗi 100ms)
+    for i in range(30):
+        try:
+            resp = arduino.send_command("C")
+            if resp and "S1:" in resp:
+                parts = resp.split('|')
+                s1 = int(parts[0].split(':')[1])
+                s2 = int(parts[1].split(':')[1])
+                s1_samples.append(s1)
+                s2_samples.append(s2)
+        except Exception as e:
+            print(f"Error reading sensors: {e}")
+        time.sleep(0.1)
+    
+    # Phân tích: nếu >= 90% mẫu = 0 (phát hiện vật) → Hố đầy
+    if len(s1_samples) > 0:
+        s1_zero_ratio = s1_samples.count(0) / len(s1_samples)
+        s2_zero_ratio = s2_samples.count(0) / len(s2_samples)
+        
+        bin1_full_flag = s1_zero_ratio >= 0.9
+        bin2_full_flag = s2_zero_ratio >= 0.9
+        
+        print(f"Bin 1: {s1_zero_ratio*100:.1f}% covered → {'FULL' if bin1_full_flag else 'OK'}")
+        print(f"Bin 2: {s2_zero_ratio*100:.1f}% covered → {'FULL' if bin2_full_flag else 'OK'}")
+    
+    return bin1_full_flag, bin2_full_flag
+
+# ================= FLASK ROUTES =================
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/control', methods=['POST'])
+def manual_control():
+    data = request.json
+    cmd = data.get('command')
+    if not cmd:
+        return jsonify({"status": "Error: No command"}), 400
+    
+    resp = arduino.send_command(cmd)
+    return jsonify({"status": "Sent", "arduino_response": resp})
+
+@app.route('/api/sensors', methods=['GET'])
+def get_sensors():
+    # Send 'C' command to Arduino to check sensors
+    resp = arduino.send_command("C")
+    # Expected response: "S1:0|S2:1" or similar
+    # Parse it
+    s1 = 1
+    s2 = 1
+    
+    if resp and "S1:" in resp:
+        try:
+            parts = resp.split('|')
+            for part in parts:
+                if "S1:" in part:
+                    s1 = int(part.split(':')[1])
+                elif "S2:" in part:
+                    s2 = int(part.split(':')[1])
+        except Exception as e:
+            print(f"Error parsing sensor data: {e}")
+            
+    return jsonify({"s1": s1, "s2": s2})
+
+@app.route('/api/bin_status', methods=['GET'])
+def get_bin_status():
+    """Trả về trạng thái đầy của 2 hố"""
+    global bin1_full_flag, bin2_full_flag
+    return jsonify({
+        "bin1_full": bin1_full_flag,
+        "bin2_full": bin2_full_flag
+    })
+
+@app.route('/api/reset_bins', methods=['POST'])
+def reset_bins():
+    """Reset cờ đầy sau khi người dùng dọn rác"""
+    global bin1_full_flag, bin2_full_flag
+    bin1_full_flag = False
+    bin2_full_flag = False
+    print("✓ Bin flags reset by user")
+    return jsonify({"status": "reset"})
+
+@app.route('/api/execute_script', methods=['POST'])
+def execute_script():
+    global is_running_scenario, stop_scenario_flag
+    
+    if is_running_scenario:
+        return jsonify({"status": "Busy", "message": "A scenario is already running"}), 400
+        
+    data = request.json
+    script = data.get('script', [])
+    
+    if not isinstance(script, list):
+        return jsonify({"status": "Error", "message": "Invalid script format"}), 400
+        
+    def execute_block_list(blocks):
+        global stop_scenario_flag
+        if stop_scenario_flag: return
+
+        for block in blocks:
+            if stop_scenario_flag: break
+            
+            cmd_type = block.get("type")
+            
+            if cmd_type == "M":
+                # Move: M <dirX> <dirY> <dirZ> <duration> <speed>
+                x = block.get("x", 0)
+                y = block.get("y", 0)
+                z = block.get("z", 0)
+                t = block.get("time", 1000)
+                s = block.get("speed", 50)
+                arduino.send_command(f"M {x} {y} {z} {t} {s}")
+                
+            elif cmd_type == "R":
+                # Relay: R <state>
+                state = block.get("state", 0)
+                arduino.send_command(f"R {state}")
+                
+            elif cmd_type == "W":
+                # Wait
+                t = block.get("time", 1)
+                print(f"Waiting {t}s...")
+                time.sleep(t)
+                
+            elif cmd_type == "H":
+                # Home Z
+                arduino.send_command("H")
+            
+            elif cmd_type == "HX":
+                # Home X
+                arduino.send_command("HX")
+            
+            elif cmd_type == "IF":
+                # Logic: IF <condition> THEN <blocks> ELSE <blocks>
+                condition = block.get("condition")
+                result = evaluate_condition(condition)
+                
+                print(f"IF Condition Result: {result}")
+                
+                if result:
+                    print("Executing THEN branch...")
+                    execute_block_list(block.get("then", []))
+                else:
+                    print("Executing ELSE branch...")
+                    execute_block_list(block.get("else", []))
+
+            elif cmd_type == "REPEAT":
+                # Loop: REPEAT <times> DO <blocks>
+                count = int(block.get("times", 1))
+                print(f"Repeating {count} times...")
+                
+                for i in range(count):
+                    if stop_scenario_flag: break
+                    print(f"  Loop Iteration {i+1}/{count}")
+                    execute_block_list(block.get("do", []))
+
+    def evaluate_condition(condition):
+        global stop_scenario_flag
+        if not condition: return False
+        
+        cond_type = condition.get("type")
+        
+        if cond_type == "CHECK_LABEL":
+            target_label = condition.get("label", "").lower()
+            print(f"Checking Label: {target_label}...")
+            
+            # Capture Frame
+            if camera is None:
+                print("Error: Camera not initialized")
+                return False
+                
+            success, frame = camera.read()
+            if not success:
+                print("Error: Failed to capture frame")
+                return False
+                
+            # Predict
+            idx, label, score = predict_frame(frame)
+            print(f"Detected: {label} ({score:.2f})")
+            
+            # Simple string match (case insensitive)
+            # Label from file might have newline, strip it
+            clean_label = label.strip().lower()
+            label_match = target_label in clean_label
+            
+            # KIỂM TRA HỐ ĐẦY TRƯỚC KHI TIẾP TỤC
+            if label_match:
+                print("Label matched! Checking bin status...")
+                bin1_full, bin2_full = check_bin_status()
+                
+                # Nếu Premium và Hố 1 đầy → DỪNG
+                if "premium" in target_label and bin1_full:
+                    print("⚠️ CẢNH BÁO: HỐ PREMIUM ĐẦY!")
+                    stop_scenario_flag = True
+                    return False
+                
+                # Nếu Second-grade và Hố 2 đầy → DỪNG
+                if "second" in target_label and bin2_full:
+                    print("⚠️ CẢNH BÁO: HỐ SECOND-GRADE ĐẦY!")
+                    stop_scenario_flag = True
+                    return False
+                
+                # Nếu cả 2 đầy → DỪNG
+                if bin1_full and bin2_full:
+                    print("⚠️ CẢNH BÁO: CẢ 2 HỐ ĐẦY!")
+                    stop_scenario_flag = True
+                    return False
+            
+            return label_match
+            
+        return False
+
+    def run_script_thread(script_data):
+        global is_running_scenario, stop_scenario_flag
+        is_running_scenario = True
+        stop_scenario_flag = False
+        print("Starting Script Execution...")
+        
+        try:
+            execute_block_list(script_data)
+        except Exception as e:
+            print(f"Script Error: {e}")
+        finally:
+            is_running_scenario = False
+            print("Script Execution Finished")
+
+    thread = threading.Thread(target=run_script_thread, args=(script,))
+    thread.start()
+    
+    return jsonify({"status": "Started", "steps": len(script)})
+
+@app.route('/api/run_scenario/<int:type_id>', methods=['POST'])
+def run_scenario(type_id):
+    if is_running_scenario:
+        return jsonify({"status": "Busy", "message": "A scenario is already running"}), 400
+        
+    thread = threading.Thread(target=run_scenario_logic, args=(type_id,))
+    thread.start()
+    return jsonify({"status": "Started", "type": type_id})
+
+def generate_frames():
+    global camera
+    if camera is None:
+        camera = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_DSHOW)
+        if not camera.isOpened():
+            camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+            
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            # Optional: Run prediction here to overlay on video
+            # index, name, score = predict_frame(frame)
+            # cv2.putText(frame, f"{name} ({score:.2f})", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# ================= MAIN =================
+if __name__ == '__main__':
+    load_model()
+    # Run Flask
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
