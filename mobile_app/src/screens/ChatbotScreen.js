@@ -5,7 +5,7 @@ import Markdown from 'react-native-markdown-display';
 import { getChatbotContext, getInventory, getAlerts, getAnalytics } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY;
+const GROQ_API_KEY = '';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // ==================== SYSTEM PROMPT ====================
@@ -33,7 +33,50 @@ const SYSTEM_PROMPT = `Bạn là AI quản lý kho thông minh cho hệ thống 
 ## CONTEXT DATA:
 `;
 
+// ...existing code...
+const MessageBubble = ({ item }) => {
+    const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
+
+    if (item.sender === 'user') {
+        return (
+            <View style={[styles.messageBubble, styles.userBubble]}>
+                <Text style={styles.userText}>{item.text}</Text>
+            </View>
+        );
+    }
+
+    return (
+        <View style={[styles.messageBubble, styles.botBubble]}>
+            <Text style={styles.prefix}>AI:</Text>
+            
+            {item.reasoning && (
+                <View style={styles.reasoningContainer}>
+                    <TouchableOpacity 
+                        style={styles.reasoningHeader} 
+                        onPress={() => setIsReasoningExpanded(!isReasoningExpanded)}
+                    >
+                        <Text style={styles.reasoningLabel}>
+                            {isReasoningExpanded ? '▼ Hide Thinking Process' : '▶ View Thinking Process'}
+                        </Text>
+                    </TouchableOpacity>
+                    
+                    {isReasoningExpanded && (
+                        <View style={styles.reasoningContent}>
+                            <Text style={styles.reasoningText}>{item.reasoning}</Text>
+                        </View>
+                    )}
+                </View>
+            )}
+
+            <Markdown style={markdownStyles}>
+                {item.text}
+            </Markdown>
+        </View>
+    );
+};
+
 const ChatbotScreen = ({ onBack }) => {
+// ...existing code...
     const { deviceId } = useAuth();
     
     const [messages, setMessages] = useState([
@@ -158,10 +201,12 @@ const ChatbotScreen = ({ onBack }) => {
             ];
 
             const response = await axios.post(GROQ_API_URL, {
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-120b",
                 messages: apiMessages,
-                temperature: 0.4,
-                max_tokens: 1024
+                temperature: 0.6,
+                max_completion_tokens: 1024,
+                include_reasoning: true,
+                reasoning_effort: "medium"
             }, {
                 headers: {
                     'Authorization': `Bearer ${GROQ_API_KEY}`,
@@ -169,8 +214,16 @@ const ChatbotScreen = ({ onBack }) => {
                 }
             });
 
-            const botReply = response.data.choices[0].message.content;
-            const botMessage = { id: Date.now() + 1, text: botReply, sender: 'bot' };
+            const messageData = response.data.choices[0].message;
+            const botReply = messageData.content;
+            const reasoning = messageData.reasoning;
+
+            const botMessage = { 
+                id: Date.now() + 1, 
+                text: botReply, 
+                sender: 'bot',
+                reasoning: reasoning 
+            };
             setMessages(prev => [...prev, botMessage]);
 
         } catch (error) {
@@ -202,23 +255,7 @@ const ChatbotScreen = ({ onBack }) => {
         flatListRef.current?.scrollToEnd({ animated: true });
     }, [messages]);
 
-    const renderItem = ({ item }) => (
-        <View style={[
-            styles.messageBubble,
-            item.sender === 'user' ? styles.userBubble : styles.botBubble
-        ]}>
-            {item.sender === 'bot' ? (
-                <View>
-                    <Text style={styles.prefix}>AI:</Text>
-                    <Markdown style={markdownStyles}>
-                        {item.text}
-                    </Markdown>
-                </View>
-            ) : (
-                <Text style={styles.userText}>{item.text}</Text>
-            )}
-        </View>
-    );
+    const renderItem = ({ item }) => <MessageBubble item={item} />;
 
     return (
         <View style={styles.container}>
@@ -458,6 +495,33 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 12,
         fontFamily: 'Courier',
+    },
+    reasoningContainer: {
+        marginBottom: 10,
+        backgroundColor: '#1F2937',
+        borderRadius: 4,
+        borderLeftWidth: 2,
+        borderLeftColor: '#6B7280',
+        overflow: 'hidden',
+    },
+    reasoningHeader: {
+        padding: 8,
+        backgroundColor: '#374151',
+    },
+    reasoningLabel: {
+        color: '#9CA3AF',
+        fontSize: 11,
+        fontFamily: 'Courier',
+        fontWeight: 'bold',
+    },
+    reasoningContent: {
+        padding: 8,
+    },
+    reasoningText: {
+        color: '#9CA3AF',
+        fontSize: 11,
+        fontFamily: 'Courier',
+        fontStyle: 'italic',
     },
 });
 
