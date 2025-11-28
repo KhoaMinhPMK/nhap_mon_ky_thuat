@@ -1,0 +1,46 @@
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {1.1}{\ignorespaces Các vấn đề của phân loại thủ công}}{1}{table.1.1}%
+\contentsline {table}{\numberline {1.2}{\ignorespaces So sánh các giải pháp hiện có}}{2}{table.1.2}%
+\contentsline {table}{\numberline {1.3}{\ignorespaces Kế hoạch thực hiện dự án}}{4}{table.1.3}%
+\contentsline {table}{\numberline {1.4}{\ignorespaces Tiêu chí phân loại dưa hấu}}{4}{table.1.4}%
+\contentsline {table}{\numberline {1.5}{\ignorespaces Phạm vi công nghệ sử dụng}}{5}{table.1.5}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces Các thành phần cơ bản của robot trong đề tài}}{6}{table.2.1}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Phân loại robot theo cấu hình}}{7}{table.2.2}%
+\contentsline {table}{\numberline {2.3}{\ignorespaces Thông số và chức năng của CNC Shield V3}}{9}{table.2.3}%
+\contentsline {table}{\numberline {2.4}{\ignorespaces Phân loại công tắc hành trình}}{10}{table.2.4}%
+\contentsline {table}{\numberline {2.5}{\ignorespaces Thông số Relay Module}}{10}{table.2.5}%
+\contentsline {table}{\numberline {2.6}{\ignorespaces Các thành phần truyền động cơ khí}}{11}{table.2.6}%
+\contentsline {table}{\numberline {2.7}{\ignorespaces Quy trình xử lý ảnh}}{12}{table.2.7}%
+\contentsline {table}{\numberline {2.8}{\ignorespaces Cấu trúc mạng CNN đề xuất}}{13}{table.2.8}%
+\contentsline {table}{\numberline {2.9}{\ignorespaces Các metrics đánh giá mô hình}}{14}{table.2.9}%
+\contentsline {table}{\numberline {2.10}{\ignorespaces Ưu điểm của lập trình kéo thả}}{15}{table.2.10}%
+\contentsline {table}{\numberline {2.11}{\ignorespaces Thông số mô hình LLM}}{16}{table.2.11}%
+\contentsline {table}{\numberline {2.12}{\ignorespaces Các tính năng chính của Chatbot}}{17}{table.2.12}%
+\contentsline {table}{\numberline {2.13}{\ignorespaces Thông số giao tiếp Serial}}{17}{table.2.13}%
+\contentsline {table}{\numberline {2.14}{\ignorespaces Danh sách API Endpoints}}{18}{table.2.14}%
+\contentsline {table}{\numberline {2.15}{\ignorespaces Vai trò của robot trong công nghiệp}}{18}{table.2.15}%
+\contentsline {table}{\numberline {2.16}{\ignorespaces Ứng dụng robot trong nông nghiệp}}{19}{table.2.16}%
+\contentsline {table}{\numberline {2.17}{\ignorespaces Thách thức của robot nông nghiệp}}{19}{table.2.17}%
+\contentsline {table}{\numberline {2.18}{\ignorespaces Đóng góp của đề tài}}{20}{table.2.18}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Danh sách module điều khiển}}{22}{table.3.1}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Danh sách cơ cấu chấp hành}}{22}{table.3.2}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Danh sách cảm biến và công tắc}}{23}{table.3.3}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Danh sách tụ điện}}{23}{table.3.4}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Danh sách vòng bi}}{23}{table.3.5}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces Danh sách ốc vít}}{23}{table.3.6}%
+\contentsline {table}{\numberline {3.7}{\ignorespaces Kết nối Arduino và CNC Shield}}{27}{table.3.7}%
+\contentsline {table}{\numberline {3.8}{\ignorespaces Chi tiết tụ điện lọc nhiễu}}{28}{table.3.8}%
+\contentsline {table}{\numberline {3.9}{\ignorespaces REST API Endpoints}}{30}{table.3.9}%
+\contentsline {table}{\numberline {3.10}{\ignorespaces Các màn hình Mobile App}}{32}{table.3.10}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Kết quả kỹ thuật đạt được}}{33}{table.4.1}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Lợi ích thực tiễn}}{33}{table.4.2}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Hạn chế phần cứng}}{34}{table.4.3}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Đề xuất cải tiến ngắn hạn}}{35}{table.4.4}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Các hoạt động đóng góp}}{36}{table.4.5}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {A.1}{\ignorespaces Danh sách khối lệnh Blockly}}{38}{table.A.1}%
+\contentsline {table}{\numberline {A.2}{\ignorespaces Sơ đồ chân CNC Shield V3}}{38}{table.A.2}%
+\contentsfinish 
